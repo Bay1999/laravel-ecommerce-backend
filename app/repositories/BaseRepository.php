@@ -23,15 +23,20 @@ class BaseRepository implements BaseRepositoryInterface
     $query = $this->model->query();
 
     if (count($filter) > 0) {
+      $filterable = $this->model->filterable ?? [];
       foreach ($filter as $key => $value) {
-        $query->where($key, $value);
+        if (in_array($key, $filterable)) {
+          if ($value === '__not_null__') $query->whereNotNull($key);
+          else $query->where($key, $value);
+        }
       }
     }
 
     if (count($search) > 0) {
-      $query->where(function ($q) use ($search) {
-        foreach ($search as $key => $value) {
-          $q->orWhere($key, 'like', '%' . $value . '%');
+      $searchable = $this->model->searchable;
+      $query->where(function ($q) use ($search, $searchable) {
+        foreach ($searchable as $key => $value) {
+          $q->orWhere($value, 'like', '%' . $search . '%');
         }
       });
     }
