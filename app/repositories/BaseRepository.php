@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Repositories\interfaces\BaseRepositoryInterface;
+use Illuminate\Support\Facades\Log;
 
 class BaseRepository implements BaseRepositoryInterface
 {
@@ -27,12 +28,13 @@ class BaseRepository implements BaseRepositoryInterface
       foreach ($filter as $key => $value) {
         if (in_array($key, $filterable)) {
           if ($value === '__not_null__') $query->whereNotNull($key);
+          else if ($value === '__null__') $query->whereNull($key);
           else $query->where($key, $value);
         }
       }
     }
 
-    if (count($search) > 0) {
+    if ($search) {
       $searchable = $this->model->searchable;
       $query->where(function ($q) use ($search, $searchable) {
         foreach ($searchable as $key => $value) {
@@ -51,16 +53,21 @@ class BaseRepository implements BaseRepositoryInterface
 
   public function findById($id)
   {
-    return $this->model->find($id);
+    return $this->model->findOrFail($id);
+  }
+
+  public function findBySlug($slug)
+  {
+    return $this->model->where('slug', $slug)->first();
   }
 
   public function update($id, $data)
   {
-    return $this->model->update($id, $data);
+    return tap($this->model->findOrFail($id))->update($data);
   }
 
   public function delete($id)
   {
-    return $this->model->delete($id);
+    return tap($this->model->findOrFail($id))->delete();
   }
 }

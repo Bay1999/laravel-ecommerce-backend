@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Repositories\CategoryRepository;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
 
 class CategoryService
 {
@@ -24,26 +26,22 @@ class CategoryService
     $perPage = $data['limit'] ?? 10;
     $sortBy = $data['sort_by'] ?? 'id';
     $sortOrder = $data['sort_order'] ?? 'desc';
-    $search = $data['search'] ?? [];
+    $search = $data['search'] ?? '';
     $deleted = $data['deleted'] ?? false;
     $filter = $data['filter'] ?? [];
-    $filter['parent_category_id'] = $isParent ? null : '__not_null__';
+    $filter['parent_category_id'] = $isParent ? '__null__' : '__not_null__';
 
     $query = $this->categoryRepository->queryFilter($filter, $search);
     $query->orderBy($sortBy, $sortOrder);
 
     if ($deleted) $query->onlyTrashed();
 
-    return $query->paginate($perPage);
+    return $query->paginate($perPage, ['*'], 'page', $data['page']);
   }
 
   public function findById($id)
   {
-    $category = $this->categoryRepository->findById($id);
-    if (!$category) {
-      throw new Exception("Category not found");
-    }
-    return $category;
+    return $this->categoryRepository->findById($id);
   }
 
   public function create($data)
@@ -53,31 +51,21 @@ class CategoryService
 
   public function update($id, $data)
   {
-    $category = $this->findById($id);
-    return $this->categoryRepository->update($category->id, $data);
+    return $this->categoryRepository->update($id, $data);
   }
 
   public function delete($id)
   {
-    $category = $this->findById($id);
-    return $this->categoryRepository->delete($category->id);
+    return $this->categoryRepository->delete($id);
   }
 
-  public function getSubCategory($parentId)
-  {
-    $category = $this->categoryRepository->getSubCategory($parentId);
-    if (!$category) {
-      throw new Exception("Category not found");
-    }
-    return $category;
-  }
+  // public function getSubCategory($parentId)
+  // {
+  //   return $this->categoryRepository->getSubCategory($parentId);
+  // }
 
-  public function getParentCategory($childId)
-  {
-    $category = $this->findById($childId);
-    if (!$category) {
-      throw new Exception("Category not found");
-    }
-    return $this->categoryRepository->getParentCategory($category->id);
-  }
+  // public function getParentCategory($childId)
+  // {
+  //   return $this->categoryRepository->getParentCategory($childId);
+  // }
 }

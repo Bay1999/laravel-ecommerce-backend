@@ -20,7 +20,7 @@ class CategoryFactory extends Factory
       'name' => fake()->name(),
       'slug' => fake()->slug(),
       'parent_category_id' => null,
-      'image' => $this->faker->imageUrl(640, 480, 'business'),
+      'image' => "https://picsum.photos/640/480?random=" . $this->faker->numberBetween(1, 1000),
     ];
   }
 

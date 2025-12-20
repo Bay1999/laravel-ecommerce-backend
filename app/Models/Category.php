@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\CustomTrait\HasUniqueSlug;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Category extends Model
 {
   /** @use HasFactory<\Database\Factories\CategoryFactory> */
-  use HasFactory, HasUlids, SoftDeletes;
+  use HasFactory, HasUlids, SoftDeletes, HasUniqueSlug;
 
   protected $fillable = [
     'name',
@@ -19,20 +20,20 @@ class Category extends Model
     'image',
   ];
 
-  protected $filterable = [
+  public $filterable = [
     'name',
     'slug',
     'parent_category_id',
     'image',
   ];
 
-  protected $searchable = [
+  public $searchable = [
     'name',
     'slug',
     'parent_category_id',
   ];
 
-  protected $sortable = [
+  public $sortable = [
     'id',
     'name',
     'parent_category_id',
