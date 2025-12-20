@@ -13,10 +13,10 @@ class CategoryRepository extends BaseRepository implements CategoryRepositoryInt
     parent::__construct($model);
   }
 
-  // public function getSubCategory($parentId)
-  // {
-  //   return $this->model->where('id', $parentId)->first()->subCategories;
-  // }
+  public function getSubCategory($parentId)
+  {
+    return $this->model->where('id', $parentId)->firstOrFail()->subCategories;
+  }
 
   // public function getParentCategory($childId)
   // {

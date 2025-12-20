@@ -23,28 +23,17 @@ $specifyData = [
   ['name' => 'Sharp', 'slug' => 'sharp', 'parent_category_id' => null, 'deleted_at' => now()],
 ];
 
-describe('Category Pagination and Filters', function () use ($specifyData) {
-  it('return all categories data', function () use ($specifyData) {
-    $parents = Category::factory()->count(3)->create(['parent_category_id' => null]);
-    $parentId = $parents->first()->id;
-    Category::factory()->count(2)->create([
-      'parent_category_id' => $parentId
-    ]);
-
-    $repository = new CategoryRepository(new Category());
-    $service = new CategoryService($repository);
-
-    $result = $service->getAll();
-
-    expect($result->count())->toBe(5);
-  });
+describe('Sub Category Pagination and Filters', function () use ($specifyData) {
 
   it('return paginated categories', function ($isParent, $sort_by, $sort_order, $page, $search, $expectedFirstKey, $expectedHaveCount, $expectedTotal) use ($specifyData) {
-    $parents = Category::factory()->createMany($specifyData);
-    $parentId = $parents->first()->id;
-    Category::factory()->count(3)->create([
-      'parent_category_id' => $parentId
-    ]);
+    $categories = Category::factory()->count(5)->create();
+    $categoriesIds = $categories->pluck('id')->toArray();
+    $subCategories = Category::factory()->createMany(
+      array_map(function ($data) use ($categoriesIds) {
+        $data['parent_category_id'] = fake()->randomElement($categoriesIds);
+        return $data;
+      }, $specifyData)
+    );
 
     $repository = new CategoryRepository(new Category());
     $service = new CategoryService($repository);
@@ -63,12 +52,12 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       expect(
         $result->items()[0]->{$requestArray['sort_by']}
       )->toBe(
-        $parents[$expectedFirstKey]->{$requestArray['sort_by']}
+        $subCategories[$expectedFirstKey]->{$requestArray['sort_by']}
       );
     }
   })->with([
     'page 1 active and sort by id ascending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 1,
       'search' => '',
       'sort_by' => 'id',
@@ -78,7 +67,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 1 active and sort by name ascending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 1,
       'search' => '',
       'sort_by' => 'name',
@@ -88,7 +77,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 1 active and sort by id descending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 1,
       'search' => '',
       'sort_by' => 'id',
@@ -98,7 +87,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 1 active and sort by name descending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 1,
       'search' => '',
       'sort_by' => 'name',
@@ -108,7 +97,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 1 active and search' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 1,
       'search' => 'vivo',
       'sort_by' => 'name',
@@ -118,7 +107,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 1,
     ],
     'page 2 active and sort by id ascending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 2,
       'search' => '',
       'sort_by' => 'id',
@@ -128,7 +117,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 2 active and sort by name ascending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 2,
       'search' => '',
       'sort_by' => 'name',
@@ -138,7 +127,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 2 active and sort by id descending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 2,
       'search' => '',
       'sort_by' => 'id',
@@ -148,7 +137,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 2 active and sort by name descending' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 2,
       'search' => '',
       'sort_by' => 'name',
@@ -158,7 +147,7 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
       'expectedTotal' => 5,
     ],
     'page 2 active and search' => [
-      'isParent' => true,
+      'isParent' => false,
       'page' => 2,
       'search' => 'vivo',
       'sort_by' => 'name',
@@ -170,38 +159,16 @@ describe('Category Pagination and Filters', function () use ($specifyData) {
   ]);
 });
 
-describe('Get Category By ID', function () use ($specifyData) {
-  it("return data category by id", function () use ($specifyData) {
-    $parent = Category::factory()->createMany($specifyData);
-    $subCategory = Category::factory()->count(5)->create([
-      'parent_category_id' => $parent->first()->id
-    ]);
-
-    $repository = new CategoryRepository(new Category());
-    $service = new CategoryService($repository);
-
-    $result = $service->findById($parent->first()->id);
-    expect($result->is($parent->first()))->toBeTrue();
-  });
-
-  it('return exception causes by id not found', function () {
-    $repository = new CategoryRepository(new Category());
-    $service = new CategoryService($repository);
-
-    expect(fn() => $service->findById('12312323'))
-      ->toThrow(ServiceException::class, 'Data not found.');
-  });
-});
-
-describe('Insert New Category', function () use ($specifyData) {
-  it('return new data category', function () {
+describe('Insert New Sub Category', function () use ($specifyData) {
+  it('return new data sub category', function () {
+    $category = Category::factory()->count(5)->create();
     $repository = new CategoryRepository(new Category());
     $service = new CategoryService($repository);
 
     $expectedData = [
-      'name' => 'New Category',
-      'slug' => 'new-category',
-      'parent_category_id' => null,
+      'name' => 'New Sub Category',
+      'slug' => 'new-sub-category',
+      'parent_category_id' => fake()->randomElement($category->pluck('id')->toArray()),
     ];
 
     $result = $service->create([
@@ -217,13 +184,20 @@ describe('Insert New Category', function () use ($specifyData) {
     ]);
   });
 
-  it('return new data category with slug already exists', function () use ($specifyData) {
-    $parent = Category::factory()->createMany($specifyData);
+  it('return new data sub category with slug already exists', function () use ($specifyData) {
+    $categories = Category::factory()->count(5)->create();
+    $categoriesIds = $categories->pluck('id')->toArray();
+    $subCategories = Category::factory()->createMany(
+      array_map(function ($data) use ($categoriesIds) {
+        $data['parent_category_id'] = fake()->randomElement($categoriesIds);
+        return $data;
+      }, $specifyData)
+    );
 
     $expectedData = [
       'name' => 'Samsung Galaxy',
       'slug' => 'samsung-galaxy-1',
-      'parent_category_id' => null,
+      'parent_category_id' => fake()->randomElement($categoriesIds),
     ];
 
     $repository = new CategoryRepository(new Category());
@@ -241,77 +215,90 @@ describe('Insert New Category', function () use ($specifyData) {
       'parent_category_id' => $expectedData['parent_category_id'],
     ]);
   });
+
+  it('return exception data sub category cant be inserted cause data parent not found', function () {
+    $repository = new CategoryRepository(new Category());
+    $service = new CategoryService($repository);
+
+    expect(fn() => $service->create([
+      'name' => 'New Oppo',
+      'parent_category_id' => '123123',
+    ]))
+      ->toThrow(ServiceException::class, 'Data not found.');
+  });
 });
 
-describe('Update Category', function () use ($specifyData) {
-  it('return data category that already updated', function () use ($specifyData) {
-    $parent = Category::factory()->createMany($specifyData);
+describe('Update Sub Category', function () use ($specifyData) {
+  it('return data sub category that already updated', function () use ($specifyData) {
+    $categories = Category::factory()->count(5)->create();
+    $categoriesIds = $categories->pluck('id')->toArray();
+    $subCategories = Category::factory()->createMany(
+      array_map(function ($data) use ($categoriesIds) {
+        $data['parent_category_id'] = fake()->randomElement($categoriesIds);
+        return $data;
+      }, $specifyData)
+    );
 
     $expectedData = [
       'name' => 'New Oppo',
       'slug' => 'new-oppo',
-      'parent_category_id' => null,
+      'parent_category_id' => fake()->randomElement($categoriesIds),
     ];
 
     $repository = new CategoryRepository(new Category());
     $service = new CategoryService($repository);
 
-    $result = $service->update($parent->first()->id, [
+    $result = $service->update($subCategories->first()->id, [
       'name' => $expectedData['name'],
       'parent_category_id' => $expectedData['parent_category_id'],
     ]);
 
     assertDatabaseHas('categories', [
-      'id' => $parent->first()->id,
+      'id' => $subCategories->first()->id,
       'name' => $expectedData['name'],
       'slug' => $expectedData['slug'],
       'parent_category_id' => $expectedData['parent_category_id'],
     ]);
   });
 
-  it('return data category that already updated with slug already exists', function () use ($specifyData) {
-    $parent = Category::factory()->createMany($specifyData);
+  it('return data sub category that already updated with slug already exists', function () use ($specifyData) {
+    $categories = Category::factory()->count(5)->create();
+    $categoriesIds = $categories->pluck('id')->toArray();
+    $subCategories = Category::factory()->createMany(
+      array_map(function ($data) use ($categoriesIds) {
+        $data['parent_category_id'] = fake()->randomElement($categoriesIds);
+        return $data;
+      }, $specifyData)
+    );
 
     $expectedData = [
       'name' => 'Samsung Galaxy',
       'slug' => 'samsung-galaxy-1',
-      'parent_category_id' => null,
+      'parent_category_id' => fake()->randomElement($categoriesIds),
     ];
 
     $repository = new CategoryRepository(new Category());
     $service = new CategoryService($repository);
 
-    $result = $service->update($parent->first()->id, [
+    $result = $service->update($subCategories->first()->id, [
       'name' => $expectedData['name'],
       'parent_category_id' => $expectedData['parent_category_id'],
     ]);
 
     assertDatabaseHas('categories', [
-      'id' => $parent->first()->id,
+      'id' => $subCategories->first()->id,
       'name' => $expectedData['name'],
       'slug' => $expectedData['slug'],
       'parent_category_id' => $expectedData['parent_category_id'],
     ]);
   });
 
-  it('return exception data Data not found', function () use ($specifyData) {
-    $repository = new CategoryRepository(new Category());
-    $service = new CategoryService($repository);
-
-    expect(fn() => $service->update('12312323', [
-      'name' => 'New Oppo',
-      'parent_category_id' => null,
-    ]))
-      ->toThrow(ServiceException::class, 'Data not found.');
-  });
-
-  it('return exception data category cant be edited cause data is deleted', function () use ($specifyData) {
+  it('return exception data sub category cant be edited cause data parent not found', function () {
     $dataCategory = Category::factory()->create(
       [
         'name' => 'Samsung Galaxy',
         'slug' => 'samsung-galaxy-1',
-        'parent_category_id' => null,
-        'deleted_at' => now(),
+        'parent_category_id' => '123123'
       ]
     );
 
@@ -320,9 +307,9 @@ describe('Update Category', function () use ($specifyData) {
 
     expect(fn() => $service->update($dataCategory->id, [
       'name' => 'New Oppo',
-      'parent_category_id' => null,
+      'parent_category_id' => '123123',
     ]))
-      ->toThrow(ServiceException::class, 'Data not found.');
+      ->toThrow(ServiceException::class, 'Category not found.');
   });
 });
 
@@ -341,24 +328,11 @@ describe('Delete Category', function () use ($specifyData) {
   });
 
 
-  it('return exception cause data category to delete not found', function () {
+  it('return exception data category to delete not found', function () {
     $repository = new CategoryRepository(new Category());
     $service = new CategoryService($repository);
 
     expect(fn() => $service->delete('12312323'))
       ->toThrow(ServiceException::class, 'Data not found.');
-  });
-
-  it('return exception cause data category already use on sub category', function () use ($specifyData) {
-    $parent = Category::factory()->createMany($specifyData);
-    $subCategory = Category::factory()->count(5)->create([
-      'parent_category_id' => $parent->first()->id
-    ]);
-
-    $repository = new CategoryRepository(new Category());
-    $service = new CategoryService($repository);
-
-    expect(fn() => $service->delete($parent->first()->id))
-      ->toThrow(ServiceException::class, 'Category has sub categories.');
   });
 });

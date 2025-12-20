@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ServiceException;
 use App\Repositories\CategoryRepository;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -39,23 +40,41 @@ class CategoryService
     return $query->paginate($perPage, ['*'], 'page', $data['page']);
   }
 
-  public function findById($id)
+  public function findById($id, $errorMessage = "Data not found.")
   {
-    return $this->categoryRepository->findById($id);
+    try {
+      return $this->categoryRepository->findById($id);
+    } catch (ModelNotFoundException $e) {
+      throw new ServiceException($errorMessage, 404, $e);
+    }
   }
 
   public function create($data)
   {
+    if ($data['parent_category_id']) {
+      $this->findById($data['parent_category_id']);
+    }
     return $this->categoryRepository->create($data);
   }
 
   public function update($id, $data)
   {
-    return $this->categoryRepository->update($id, $data);
+    try {
+      if ($data['parent_category_id']) {
+        $this->findById($data['parent_category_id'], 'Category not found.');
+      }
+      return $this->categoryRepository->update($id, $data);
+    } catch (ModelNotFoundException $e) {
+      throw new ServiceException('Data not found.', 404, $e);
+    }
   }
 
   public function delete($id)
   {
+    $category = $this->findById($id);
+    if ($category->subCategories->count() > 0) {
+      throw new ServiceException('Category has sub categories.', 422);
+    }
     return $this->categoryRepository->delete($id);
   }
 

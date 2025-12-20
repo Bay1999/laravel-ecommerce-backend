@@ -41,11 +41,11 @@ class Category extends Model
 
   public function parentCategory()
   {
-    return $this->belongsTo(Category::class, 'parent_category_id', 'id');
+    return $this->belongsTo(Category::class, 'id', 'parent_category_id');
   }
 
   public function subCategories()
   {
-    return $this->hasMany(Category::class, 'id', 'parent_category_id');
+    return $this->hasMany(Category::class, 'parent_category_id', 'id');
   }
 }
