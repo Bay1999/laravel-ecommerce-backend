@@ -24,6 +24,7 @@ class CategoryService
 
   public function getCategoriesPaginated($data, $isParent = true)
   {
+    $page = $data['page'] ?? 1;
     $perPage = $data['limit'] ?? 10;
     $sortBy = $data['sort_by'] ?? 'id';
     $sortOrder = $data['sort_order'] ?? 'desc';
@@ -37,7 +38,7 @@ class CategoryService
 
     if ($deleted) $query->onlyTrashed();
 
-    return $query->paginate($perPage, ['*'], 'page', $data['page']);
+    return $query->paginate($perPage, ['*'], 'page', $page);
   }
 
   public function findById($id, $errorMessage = "Data not found.")
@@ -49,20 +50,21 @@ class CategoryService
     }
   }
 
-  public function create($data)
+  public function create($data, $isParent = true)
   {
-    if ($data['parent_category_id']) {
-      $this->findById($data['parent_category_id']);
+    if (!$isParent && isset($data['parent_category_id'])) {
+      $this->findById($data['parent_category_id'], 'Parent category not found.');
     }
     return $this->categoryRepository->create($data);
   }
 
-  public function update($id, $data)
+  public function update($id, $data, $isParent = true)
   {
     try {
-      if ($data['parent_category_id']) {
-        $this->findById($data['parent_category_id'], 'Category not found.');
+      if (!$isParent && isset($data['parent_category_id'])) {
+        $this->findById($data['parent_category_id'], 'Parent Category not found.');
       }
+
       return $this->categoryRepository->update($id, $data);
     } catch (ModelNotFoundException $e) {
       throw new ServiceException('Data not found.', 404, $e);

@@ -2,6 +2,7 @@
 
 namespace App\CustomTrait;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 trait HasUniqueSlug
@@ -23,7 +24,7 @@ trait HasUniqueSlug
     $slug = $baseSlug;
     $i = 1;
 
-    while (static::where('slug', $slug)->exists()) {
+    while (static::withTrashed()->where('slug', $slug)->where('id', '!=', $this->id)->exists()) {
       $slug = $baseSlug . '-' . $i++;
     }
 
