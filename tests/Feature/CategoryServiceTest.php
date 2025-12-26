@@ -294,7 +294,7 @@ describe('Update Category', function () use ($specifyData) {
     ]);
   });
 
-  it('return exception data Data not found', function () use ($specifyData) {
+  it('return exception Data not found', function () use ($specifyData) {
     $repository = new CategoryRepository(new Category());
     $service = new CategoryService($repository);
 
